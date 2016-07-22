@@ -88,15 +88,15 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
 
     # Features
     values     = []  # Difference between adjacent points
-    diff_max   = []  # Maximum difference between adjacent points
-    diff_var   = []  # Variance of the differences
-    val_range  = []  # Range of delay values
+    d_max   = []  # Maximum difference between adjacent points
+    d_var   = []  # Variance of the differences
+    i_range  = []  # Range of delay values
     n_points   = []  # Number of points during the two hours window wrt observ time
     n_points_r = []  # Number of points during the two hours window wrt longest curve
-    points_out = []  # Number of points out of 2*sigmas
-    bpoints_out= []  # Binary indicator Number of points out of 2*sigmas
-    diff_ske   = []
-    diff_kur   = []
+    d_outliers = []  # Number of points out of 2*sigmas
+    d_outliers_bin= []  # Binary indicator Number of points out of 2*sigmas
+    d_ske   = []
+    d_kur   = []
     sroti      = []
 
     nmax = 0
@@ -117,16 +117,16 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
         diff = pd.DataFrame({"dt":dt,"diph":diph})
         diff = diff.loc[diff.dt <= tt,"diph"]
 
-        # Add descriptors for val_range and n_points
-        val_range.append(data.I_PHASE.max() - data.I_PHASE.min())
+        # Add descriptors for i_range and n_points
+        i_range.append(data.I_PHASE.max() - data.I_PHASE.min())
         n_points.append(data.shape[0])
         sroti.append(get_sroti(data)[0])
         
         # Add descriptors for diff max, variance, skewness and kurtosis
-        diff_max.append(diff.abs().max())
-        diff_var.append(diff.std())
-        diff_ske.append(diff.skew())
-        diff_kur.append(diff.kurt())
+        d_max.append(diff.abs().max())
+        d_var.append(diff.std())
+        d_ske.append(diff.skew())
+        d_kur.append(diff.kurt())
 #        diff_dis.append(index_of_dispersion(diff))
         # create array and list with diff values
         values.append(diff.values)
@@ -144,11 +144,11 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
     mu, std  = np.mean(vlist), np.std(vlist,ddof=1)
     for i, station in enumerate(st):
         tmp = (values[i] > mu + 2*std) | (values[i] < mu - 2*std)
-        points_out.append(np.log(tmp.sum()+1) )
+        d_outliers.append(np.log(tmp.sum()+1) )
         if tmp.sum()>0:
-            bpoints_out.append(1)
+            d_outliers_bin.append(1)
         else:
-            bpoints_out.append(0)
+            d_outliers_bin.append(0)
         #print station, tmp.sum(), values[station].shape
         
     ############################################# 
@@ -170,18 +170,18 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
     ############################################# 
 
     df = pd.DataFrame({"station":st, 
-                       "diff_max":diff_max, "diff_var": diff_var, 
-                       "diff_ske":diff_ske, "diff_kur": diff_kur, "sroti": sroti,
-                         "n": n_points,"nr": n_points_r, "points_out":points_out,
-                         "bpoints_out":bpoints_out, "val_range": val_range})
+                       "d_max":d_max, "d_var": d_var, 
+                       "d_ske":d_ske, "d_kur": d_kur, "sroti": sroti,
+                         "n": n_points,"nr": n_points_r, "d_outliers":d_outliers,
+                         "d_outliers_bin":d_outliers_bin, "i_range": i_range})
     
-    df["of_ma"], out_ma = get_outlier_meas(st_data, method="ma")
-    df["of_pf"], out_pf = get_outlier_meas(st_data, method="poly")
+    df["i_outf_ma"], out_ma = get_outlier_meas(st_data, method="ma")
+    df["i_outf_pf"], out_pf = get_outlier_meas(st_data, method="poly")
 
     df.sort_values(by="station",inplace=True)
     df.reset_index(drop=True,inplace=True)
     if normalize:
-        c_n = ["diff_max","diff_var","diff_ske","diff_kur","val_range","of_ma","of_pf","points_out"]
+        c_n = ["d_max","d_var","d_ske","d_kur","i_range","i_outf_ma","i_outf_pf","d_outliers"]
         df = normalize_descriptors(df,c_n)
     
     
@@ -194,15 +194,15 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
         # Features
         values     = []  # Difference between adjacent points
         vlist      = []  # Difference between adjacent points
-        diff_max   = []  # Maximum difference between adjacent points
-        diff_var   = []  # Variance of the differences
-        val_range  = []  # Range of delay values
+        d_max   = []  # Maximum difference between adjacent points
+        d_var   = []  # Variance of the differences
+        i_range  = []  # Range of delay values
         n_points   = []  # Number of points during the two hours window wrt observ time
         n_points_r = []  # Number of points during the two hours window wrt longest curve
-        points_out = []  # Number of points out of 2*sigmas
-        bpoints_out= []  # Binary indicator Number of points out of 2*sigmas
-        diff_ske   = []
-        diff_kur   = []
+        d_outliers = []  # Number of points out of 2*sigmas
+        d_outliers_bin= []  # Binary indicator Number of points out of 2*sigmas
+        d_ske   = []
+        d_kur   = []
         sroti      = []
         n_out_ma   = []  # Number of moving average outliers in a window
         n_out_pf   = []  # Number of polyfit outliers in a window    
@@ -221,30 +221,30 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
             tsdata = data[data.time_slot == ts]
             if tsdata.shape[0]==0:
                 #print "No data for time slot",ts, "station", station
-                val_range.append(0)
+                i_range.append(0)
                 n_points.append(0)
                 n_out_ma.append(0)
                 n_out_pf.append(0)
-                diff_max.append(0)
-                diff_var.append(0)
-                diff_ske.append(0)
-                diff_kur.append(0)
+                d_max.append(0)
+                d_var.append(0)
+                d_ske.append(0)
+                d_kur.append(0)
                 sroti.append(0)
-                points_out.append(0)
-                bpoints_out.append(0)
+                d_outliers.append(0)
+                d_outliers_bin.append(0)
                 continue
-            # Add descriptors for val_range, n_points and iphase outliers
-            val_range.append(tsdata.I_PHASE.max() - tsdata.I_PHASE.min())
+            # Add descriptors for i_range, n_points and iphase outliers
+            i_range.append(tsdata.I_PHASE.max() - tsdata.I_PHASE.min())
             n_points.append(tsdata.shape[0])
             n_out_ma.append(tsdata.merge(out_ma).shape[0])
             n_out_pf.append(tsdata.merge(out_pf).shape[0])
             
             # Add descriptors for diff max, variance, skewness and kurtosis
             diff = diff_g.loc[diff_g.time_slot==ts,"diph"]
-            diff_max.append(diff.abs().max())
-            diff_var.append(diff.std())
-            diff_ske.append(diff.skew())
-            diff_kur.append(diff.kurt())
+            d_max.append(diff.abs().max())
+            d_var.append(diff.std())
+            d_ske.append(diff.skew())
+            d_kur.append(diff.kurt())
             sroti.append(get_sroti(tsdata))
             # create array and list with diff values
             #values.append(diff.values)
@@ -252,11 +252,11 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
 
 
             tmp = (diff.values > mu + 2*std) | (diff.values < mu - 2*std)
-            points_out.append(np.log(tmp.sum()+1) )
+            d_outliers.append(np.log(tmp.sum()+1) )
             if tmp.sum()>0:
-                bpoints_out.append(1)
+                d_outliers_bin.append(1)
             else:
-                bpoints_out.append(0)
+                d_outliers_bin.append(0)
 
     
         n_points = 1.*np.array(n_points)
@@ -264,22 +264,22 @@ def get_gen_descriptors(st_data, tw = 6, normalize=False, plot=False, w=4*60):
         n_points /= 60*90/30. # max number of observations during 90 minutes, every 30 seconds
     
 #        print len([station]*len(ts_list)),
-#        print len(ts_list), len(diff_max), len(diff_var), len(diff_ske), len(diff_kur), len(diff_dis), len(n_points),
-#        print len(n_points_r), len(points_out), len(bpoints_out), len(val_range), len(n_out_ma), len(n_out_pf)
+#        print len(ts_list), len(d_max), len(d_var), len(d_ske), len(d_kur), len(diff_dis), len(n_points),
+#        print len(n_points_r), len(d_outliers), len(d_outliers_bin), len(i_range), len(n_out_ma), len(n_out_pf)
 
         ts_desc = ts_desc.append(
             pd.DataFrame(
                         {"station":[station]*len(ts_list), "time_slot": ts_list,
-                       "diff_max":diff_max, "diff_var": diff_var, 
-                       "diff_ske":diff_ske, "diff_kur": diff_kur, "sroti": sroti,
-                         "n": n_points,"nr": n_points_r, "points_out":points_out,
-                         "bpoints_out":bpoints_out, "val_range": val_range,
+                       "d_max":d_max, "d_var": d_var, 
+                       "d_ske":d_ske, "d_kur": d_kur, "sroti": sroti,
+                         "n": n_points,"nr": n_points_r, "d_outliers":d_outliers,
+                         "d_outliers_bin":d_outliers_bin, "i_range": i_range,
                         "n_out_ma":n_out_ma, "n_out_pf":n_out_pf}))
         
     ts_desc.sort_values(by=["station","time_slot"],inplace=True)
     ts_desc.reset_index(drop=True,inplace=True)
     if normalize:
-        c_n = ["diff_max","diff_var","diff_ske","diff_kur", "n_out_ma", "n_out_pf", "val_range","points_out"]
+        c_n = ["d_max","d_var","d_ske","d_kur", "n_out_ma", "n_out_pf", "i_range","d_outliers"]
         ts_desc = normalize_descriptors(ts_desc,c_n)
     return df, ts_desc
 
@@ -396,7 +396,7 @@ def analyze_set(event, curve, detail, pid, pdir, tw = 6, plot=False, normalize=n
     
     di = df["sroti"].mean()
     
-    omit_col = ["diff_ske","diff_kur"]#,"diff_dis"]
+    omit_col = ["d_ske","d_kur"]#,"diff_dis"]
     df = df.loc[:,df.columns.difference(omit_col)]
     sm = get_st_simil(df, w = [1]*df.shape[1] )
     
@@ -406,15 +406,17 @@ def analyze_set(event, curve, detail, pid, pdir, tw = 6, plot=False, normalize=n
     agg_desc = agg_desc.reindex_axis(sorted(agg_desc.columns), axis=1)
 
 #    agg_desc["grad_dif"] = (event.ix[pid])["STD_GRAD"]
-    agg_desc["n_pairs"]  = (event.ix[pid])["N_PAIRS"]
 
-    agg_desc["doy"], agg_desc["hh"] = event.ix[pid]["DOY"]/365., event.ix[pid]["HH"]/24.
-    agg_desc["el"] = event.ix[pid]["EL_DEG"]/90.
+    agg_desc["doy"]  = event.ix[pid]["DOY"]/365.
+    agg_desc["el"]   = event.ix[pid]["EL_DEG"]/90.
+    agg_desc["grad"] = event.ix[pid]["GRADIENT"]/100.
+    agg_desc["hh"]   =  event.ix[pid]["HH"]/24.
+    agg_desc["n_pairs"] = (event.ix[pid])["N_PAIRS"]
     
     df["sroti"] = normalize_descriptors(df,["sroti"],method="max")
-    ts = get_time_series(st_data)
+#    ts = get_time_series(st_data)
 #    print sm
-    return df, ts, sm, di, agg_desc
+    return df, ts_df, sm, di, agg_desc
 
 def euclid_dist(v1,v2,w=0):
     dist = 0 
@@ -434,24 +436,24 @@ def aggregate_descriptors(df):
     adf = pd.DataFrame({"n_st":[df.shape[0]]})
 
     # Stations with outliers
-    adf["bpoints_out"] = df.bpoints_out.sum()
+    adf["d_outliers_bin"] = df.d_outliers_bin.sum()
     
     # Standard deviation for some individual measurements
-    adf["diff_max_std"] = df["diff_max"].std()
-    adf["diff_max_diff"] =  df["diff_max"].max() -  df["diff_max"].sort_values().values[-2]
+    adf["d_max_std"] = df["d_max"].std()
+    adf["d_max_diff"] =  df["d_max"].max() -  df["d_max"].sort_values().values[-2]
     
-    adf["diff_var"]   = df["diff_var"].std()
-    adf["val_range"]   = df["val_range"].std()
+    adf["d_var"]   = df["d_var"].std()
+    adf["i_range"]   = df["i_range"].std()
     
-    adf["of_ma"]   = df["of_ma"].std()
-    adf["of_pf"]   = df["of_pf"].std()
+    adf["i_outf_ma"]   = df["i_outf_ma"].std()
+    adf["i_outf_pf"]   = df["i_outf_pf"].std()
     
     adf["n"]          = df["n"].sum()
     adf["nr"]         = df["nr"].sum()
-    adf["points_out"] = df["points_out"].sum()
+    adf["d_outliers"] = df["d_outliers"].sum()
     
     adf["n_low"]      = df[ df.nr < (60*90/30 / 2)].shape[0]
-    adf["n_low_r"]    = df[ df.nr < (60*90/30 / 2)].shape[0]/df.shape[0]
+    adf["n_low_r"]    = 1.0*df[ df.nr < (60*90/30 / 2)].shape[0]/df.shape[0]
     
     adf["sroti_max"] = df["sroti"].max()
     adf["sroti_mean"] = df["sroti"].mean()
