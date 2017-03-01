@@ -317,6 +317,8 @@ def normalize_descriptors(df, c_n, method="standard"):
 def moving_average(data, window_size):
     window= np.ones(int(window_size))/float(window_size)
     data_sm = np.convolve(data, window, 'same')
+    # border effects: use original data for points 
+    # where there are not nearby points
     data_sm[-int(window_size/2):] = data[-int(window_size/2):]
     data_sm[:int(window_size/2)] = data[:int(window_size/2)]
     return data_sm
@@ -382,7 +384,7 @@ def get_time_series(st_data, t1=60*90, w=5*60):
 
 
 
-def analyze_set(event, curve, detail, pid, pdir, tw = 6, plot=False, normalize=normalize):
+def analyze_set(event, curve, detail, pid, pdir, tw = 6, plot=False, normalize=False):
     
     if plot:
         route = os.path.join(pdir,str(pid)+".png")  # Display stored picture
@@ -471,6 +473,9 @@ def get_sroti(data):
         diph = data_st["I_PHASE"].diff()#.abs()
         diff = pd.DataFrame({"dt":dt,"diph":diph,"time_slot":data.loc[1:,"time_slot"]})
         diff = diff.loc[diff.dt <= 6*30,]
+        if diff.shape[0] == 0:
+            sroti.append([st,0,0])
+            continue
         for ts in diff.time_slot.unique():
             diff_ts = diff.loc[diff.time_slot == ts,"diph"].values
             sroti.append([st,ts,np.sqrt( np.mean(diff_ts*diff_ts) - np.mean(diff_ts)*np.mean(diff_ts) )])
@@ -500,10 +505,14 @@ def inspect_event(event, curve, detail, eid, Plots_folder):
     feats = df.columns.difference(["station"])
     layout = go.Layout(width=600,height=300,xaxis=go.XAxis(ticktext=feats, tickvals = range(len(feats), )))
     desc = df[df.columns.difference(["station"])].as_matrix()
-    data =  [ go.Scatter(x=range(desc.shape[1]), y=desc[i,:], name=df.loc[i,"station"]) for i in range(desc.shape[0])]
+
+#    data =  [ go.Scatter(x=range(desc.shape[1]), y=desc[i,:], name=df.loc[i,"station"]) for i in range(desc.shape[0])]
+    data =  [ go.Bar(x=range(desc.shape[1]), y=desc[i,:], name=df.loc[i,"station"]) for i in range(desc.shape[0])]
+
     iplot(go.Figure(data=data, layout=layout)) 
 
     layout = go.Layout(width=600,height=300,xaxis=go.XAxis(ticktext=ad.columns, tickvals = range(len(ad.columns), )))
-    data = [ go.Scatter(x=range(ad.shape[1]),   y=ad.values[0], name="general")]
+#    data = [ go.Scatter(x=range(ad.shape[1]),   y=ad.values[0], name="general")]
+    data = [ go.Bar(x=range(ad.shape[1]),   y=ad.values[0], name="general")]
     iplot(go.Figure(data=data, layout=layout)) 
     return
