@@ -93,6 +93,10 @@ def get_classifier_stats(data, models, n=1000, pca=False):
         bdata = data.copy()
         ### Obtain confusion matrix data for each model
         r = r.append(cm_models(bdata, models, pca=pca), ignore_index=True)
+        
+    ## TO DO: K-fold
+    ## TO DO: K-fold
+    
     r["fpr"] = 100*r.fp / (r.tn+r.fp)
     r["fnr"] = 100*r.fn / (r.tp+r.fn)
     r["pre"] = 100*r.tp / (r.tp+r.fp)
